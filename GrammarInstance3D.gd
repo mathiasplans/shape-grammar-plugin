@@ -44,12 +44,12 @@ func next_generation(count=1):
 		for i in count:
 			self.grammar_state.next_generation()
 
-func get_mesh():
+func get_grammar_mesh():
 	if self.grammar_state != null:
 		return gs_to_mesh(self.grammar_state)
 		
 func update_mesh():
-	var new_mesh = self.get_mesh()
+	var new_mesh = self.get_grammar_mesh()
 	self.mesh = new_mesh
 
 func _ready():

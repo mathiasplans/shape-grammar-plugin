@@ -20,7 +20,7 @@ class VirtualVertex:
 	func pack():
 		return self.from | self.to << 16 | self.type << 32
 		
-	func to_string():
+	func as_string():
 		return "%d %d %d" % [from, to, type]
 		
 class FirstVertex:
@@ -34,7 +34,7 @@ class FirstVertex:
 	func create_vertex(vertex_array):
 		return vertex_array[self.from]
 		
-	func to_string():
+	func as_string():
 		return "%d %d" % [from, type]
 		
 class InterpolateVertex:
@@ -58,7 +58,7 @@ class InterpolateVertex:
 		var other_coef = 1 - self.coef
 		return vertex_array[self.from] * other_coef + vertex_array[self.to] * self.coef
 		
-	func to_string():
+	func as_string():
 		return "%d %d %d %d" % [from, to, type, coef]
 		
 static func unpack_vv(p):
