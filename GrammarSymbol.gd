@@ -14,8 +14,6 @@ var rules = {}
 var rule_weigths = {}
 var rule_weights_sum = 0
 
-var rng = RandomNumberGenerator.new()
-
 func save():
 	return [id, text, nr_of_vertices, faces, terminal]
 	
@@ -96,8 +94,6 @@ func _init(_nr_of_verts,_faces,_terminal=true):
 	self.nr_of_vertices = _nr_of_verts
 	self.faces = _faces.duplicate(true)
 	self.terminal = _terminal
-	
-	self.set_seed(100)
 
 func has_same_topology_as(other):
 	return self.nr_of_vertices == other.nr_of_vertices and self.faces == other.faces
@@ -107,10 +103,6 @@ func can_be_assigned_to(poly):
 
 func is_terminal():
 	return self.rules.size() == 0
-	
-func set_seed(_seed):
-	self.rng.seed = _seed
-	self.rng.state = 100
 	
 func add_rule(index, rule, weight=1):
 	# Remove the old version of the rule if it exists
@@ -134,8 +126,8 @@ func get_rule(index):
 	return self.rules[index]
 	
 # Selects rule randomly
-func select_rule():
-	var random_tresh = self.rng.randf_range(0, self.rule_weights_sum)
+func select_rule(rng : RandomNumberGenerator):
+	var random_tresh = rng.randf_range(0, self.rule_weights_sum)
 		
 	var keys = self.rules.keys()
 	var weight = 0

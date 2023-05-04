@@ -3,9 +3,14 @@
 extends Resource
 class_name GrammarState
 
+var rng = RandomNumberGenerator.new()
+var gm = GrammarMesh.new()
+
 # Grammar configuration
 @export var grammar : Grammar:
 	set(gr):
+		gm.set_grammar_state(self)
+		
 		grammar = gr
 		clear_state()
 		
@@ -14,8 +19,27 @@ class_name GrammarState
 		
 		self.notify_property_list_changed()
 		
-		if change_cb != null:
-			change_cb.call()
+@export var seed : int = 0:
+	set(s):
+		rng.seed = s
+		
+		if auto_generate:
+			self.generate_all()
+			
+	get:
+		return rng.seed
+
+@export var nr_of_generations : int = 0:
+	set(nog):
+		if nog < 0:
+			nog = 0
+			
+		nr_of_generations = nog
+		
+		if auto_generate:
+			self.generate_all()
+
+@export var auto_generate : bool = true
 
 var initial_symbol : int:
 	set(i):
@@ -24,8 +48,6 @@ var initial_symbol : int:
 		if grammar != null:
 			_initial_symbol2 = grammar.from_enum(i)
 			
-		#if change_cb != null:
-		#	change_cb.call()
 
 var initial_symbol_override : String:
 	set(str):
@@ -42,6 +64,9 @@ var _initial_symbol2 : String:
 	set(str):
 		_initial_symbol2 = str
 		initial_shape = grammar.get_shape(str)
+		
+		if auto_generate:
+			self.generate_all()
 
 var initial_shape : GrammarShape
 
@@ -50,8 +75,6 @@ var shapes : Array[GrammarShape] = []
 var terminals : Array[GrammarShape] = []
 
 var generations = -1
-
-var change_cb
 
 func _get_property_list():
 	var properties = []
@@ -84,21 +107,23 @@ func clear_state():
 	self.shapes = []
 	self.terminals = []
 	self.generations = -1
+	
+	self.emit_changed()
 
 func start():
 	if self.grammar != null and initial_shape != null:
 		self.shapes = [initial_shape]
 		self.terminals = []
 		self.generations = 0
+		self.rng.state = 0
 		
 		return false
 		
 	else:
 		self.clear_state()
 		return true
-	
-# Fulfill a grammar
-func next_generation():
+
+func next_generation_no_signal():
 	if self.generations == -1:
 		if self.start():
 			return
@@ -113,7 +138,7 @@ func next_generation():
 		old_shape_names.append(shape.symbol.text)
 		
 		# Get the rule
-		var grammar_rule = shape.symbol.select_rule()
+		var grammar_rule = shape.symbol.select_rule(self.rng)
 		
 		# No rules, keep the shape
 		if grammar_rule == null:
@@ -137,5 +162,22 @@ func next_generation():
 			
 	self.generations += 1
 	
+func next_generation():
+	self.next_generation_no_signal()
+	self.emit_changed()
+	
+func generate_all():
+	self.nth_gen(self.nr_of_generations)
+
+func nth_gen(n=self.nr_of_generations):
+	self.start()
+	for i in n:
+		self.next_generation_no_signal()
+		
+	self.emit_changed()
+	
 func total_size():
 	return self.shapes.size() + self.terminals.size()
+	
+func get_grammar_mesh() -> GrammarMesh:
+	return self.gm

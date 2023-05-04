@@ -1,62 +1,27 @@
 @tool
 
-extends MeshInstance3D
-class_name GrammarInstance3D
+extends ArrayMesh
+class_name GrammarMesh
 
-@export var grammar_state : GrammarState:
-	set(gs):
-		grammar_state = gs
-		next_generation
-		
-		if gs != null:
-			generate_mesh()
-			gs.change_cb = generate_mesh
-		
-		else:
-			self.mesh = null
-		
-@export var generation_count : int = 5:
-	set(i):
-		if i < 0:
-			i = 0
-			
-		generation_count = i
-		
-		generate_mesh()
-		
-@export var auto_generate : bool = true
+var grammar_state : GrammarState
 
-func generate_mesh():
-	self.nth_gen(self.generation_count)
+func _on_gs_changed():
+	self.update_mesh()
 
-func nth_gen(n=self.generation_count):
-	if self.grammar_state != null:
-		self.restart()
-		self.next_generation(n)
-		self.update_mesh()
+func set_grammar_state(gs : GrammarState):
+	print(self.grammar_state, " ", gs)
+	if self.grammar_state == gs:
+		return
 	
-func restart():
 	if self.grammar_state != null:
-		self.grammar_state.start()
+		self.grammar_state.changed.disconnect(self._on_gs_changed)
 	
-func next_generation(count=1):
+	self.grammar_state = gs
+	
 	if self.grammar_state != null:
-		for i in count:
-			self.grammar_state.next_generation()
+		self.grammar_state.changed.connect(self._on_gs_changed)
 
-func get_grammar_mesh():
-	if self.grammar_state != null:
-		return gs_to_mesh(self.grammar_state)
-		
-func update_mesh():
-	var new_mesh = self.get_grammar_mesh()
-	self.mesh = new_mesh
-
-func _ready():
-	if Engine.is_editor_hint() or self.auto_generate:
-		nth_gen(generation_count)
-
-# Mesh functions
+# Mesh generation functions
 static func calculate_normal_from_points(p1, p2, p3):
 	return (p1 - p2).cross(p3 - p2).normalized()
 	
@@ -102,17 +67,19 @@ static func brep_to_mesh(points, faces, st, uvs=null, color=Color(1, 1, 1, 1)):
 		
 		_insert_brep(points, face, uv, st, color)
 		
-static func gs_to_mesh(grammar_state, color=Color(1, 1, 1, 1)):
-	if grammar_state.shapes.size() + grammar_state.terminals.size() == 0:
+func update_mesh(color=Color(1, 1, 1, 1)):
+	if self.grammar_state.shapes.size() + self.grammar_state.terminals.size() == 0:
 		return null
 	
 	var st = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	
-	for shape in grammar_state.shapes:
+	for shape in self.grammar_state.shapes:
 		brep_to_mesh(shape.vertices, shape.symbol.faces, st, null, color)
 		
-	for shape in grammar_state.terminals:
+	for shape in self.grammar_state.terminals:
 		brep_to_mesh(shape.vertices, shape.symbol.faces, st, null, color)
 		
-	return st.commit()
+	self.clear_surfaces()
+	self.clear_blend_shapes()
+	st.commit(self)
