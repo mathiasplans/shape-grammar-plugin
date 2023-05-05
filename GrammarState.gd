@@ -18,23 +18,27 @@ var gm = GrammarMesh.new()
 			initial_symbol = 0
 		
 		self.notify_property_list_changed()
-		
-@export var seed : int = 0:
+
+var default_seed = "".num_uint64(rng.randi_range(0, 0x7FFFFFFFFFFF), 16, true)
+@export var seed : String = default_seed:
 	set(s):
-		rng.seed = s
+		var u64 = s.substr(0, 12).hex_to_int()
+		rng.seed = u64
 		
 		if auto_generate:
 			self.generate_all()
 			
 	get:
-		return rng.seed
+		var str = "".num_uint64(rng.seed, 16, true).substr(0, 12)
+		
+		return str
 
-@export var nr_of_generations : int = 0:
+@export var generations : int = 0:
 	set(nog):
 		if nog < 0:
 			nog = 0
 			
-		nr_of_generations = nog
+		generations = nog
 		
 		if auto_generate:
 			self.generate_all()
@@ -74,7 +78,7 @@ var initial_shape : GrammarShape
 var shapes : Array[GrammarShape] = []
 var terminals : Array[GrammarShape] = []
 
-var generations = -1
+var generation_count = -1
 
 func _get_property_list():
 	var properties = []
@@ -106,7 +110,7 @@ func _clear_terminals():
 func clear_state():
 	self.shapes = []
 	self.terminals = []
-	self.generations = -1
+	self.generation_count = -1
 	
 	self.emit_changed()
 
@@ -114,7 +118,7 @@ func start():
 	if self.grammar != null and initial_shape != null:
 		self.shapes = [initial_shape]
 		self.terminals = []
-		self.generations = 0
+		self.generation_count = 0
 		self.rng.state = 0
 		
 		return false
@@ -124,7 +128,7 @@ func start():
 		return true
 
 func next_generation_no_signal():
-	if self.generations == -1:
+	if self.generation_count == -1:
 		if self.start():
 			return
 			
@@ -160,16 +164,16 @@ func next_generation_no_signal():
 		else:
 			self.shapes.push_back(shape)
 			
-	self.generations += 1
+	self.generation_count += 1
 	
 func next_generation():
 	self.next_generation_no_signal()
 	self.emit_changed()
 	
 func generate_all():
-	self.nth_gen(self.nr_of_generations)
+	self.nth_gen(self.generations)
 
-func nth_gen(n=self.nr_of_generations):
+func nth_gen(n=self.generations):
 	self.start()
 	for i in n:
 		self.next_generation_no_signal()

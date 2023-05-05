@@ -3,23 +3,22 @@
 extends ArrayMesh
 class_name GrammarMesh
 
-var grammar_state : GrammarState
+@export var grammar_state : GrammarState:
+	set(gs):
+		if self.grammar_state != gs:
+			if grammar_state != null:
+				grammar_state.changed.disconnect(self._on_gs_changed)
+			
+			grammar_state = gs
+			
+			if grammar_state != null:
+				grammar_state.changed.connect(self._on_gs_changed)
 
 func _on_gs_changed():
 	self.update_mesh()
 
 func set_grammar_state(gs : GrammarState):
-	print(self.grammar_state, " ", gs)
-	if self.grammar_state == gs:
-		return
-	
-	if self.grammar_state != null:
-		self.grammar_state.changed.disconnect(self._on_gs_changed)
-	
 	self.grammar_state = gs
-	
-	if self.grammar_state != null:
-		self.grammar_state.changed.connect(self._on_gs_changed)
 
 # Mesh generation functions
 static func calculate_normal_from_points(p1, p2, p3):
